@@ -8,7 +8,6 @@ import spacy
 import io
 
 
-
 nlp = spacy.load("en_core_web_sm")
 
 def parse_question_semantics(question_text):

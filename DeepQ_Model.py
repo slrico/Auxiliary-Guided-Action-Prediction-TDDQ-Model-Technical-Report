@@ -1,6 +1,10 @@
-import random
 from collections import deque
 import torch
+import torch.nn as nn
+import torch.optim as optim
+import random
+from collections import deque
+import matplotlib.pyplot as plt
 
 policy_net = QNetwork(obs_dim_text=384, obs_dim_struct=384, action_dim=5).to(device)
 target_net = QNetwork(obs_dim_text=384, obs_dim_struct=384, action_dim=5).to(device)
@@ -59,7 +63,6 @@ for sample in synthetic_dataset:
         print(f"Skipping sample due to error: {e}")
         continue 
     
-### Replay Buffer 
 class ReplayBuffer:
     def __init__(self, capacity):
         self.buffer = deque(maxlen=capacity)
@@ -108,19 +111,9 @@ def get_structured_transition():
     return obs_text, obs_struct, action, reward, next_obs_text, next_obs_struct, done 
 
 
-
-#### ------------- Check from here 
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import random
-from collections import deque
-import matplotlib.pyplot as plt
-
 plt.ion()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# --- Replay Buffer ---
 class ReplayBuffer:
     def __init__(self, capacity):
         self.buffer = deque(maxlen=capacity)
@@ -145,7 +138,7 @@ class ReplayBuffer:
     def __len__(self):
         return len(self.buffer)
 
-# --- Simple Q-Network ---
+
 class QNetwork(nn.Module):
     def __init__(self, text_dim, struct_dim, hidden_dim, num_actions):
         super().__init__()
@@ -159,7 +152,7 @@ class QNetwork(nn.Module):
         x = torch.cat([x_text, x_struct], dim=1)
         return self.fc_combined(x)
 
-# --- Hyperparameters ---
+
 TEXT_DIM = 384
 STRUCT_DIM = 384
 HIDDEN_DIM = 64
@@ -174,25 +167,18 @@ EPSILON = max(EPSILON_MIN, EPSILON - 1e-4)
 REPLAY_CAPACITY = 10000
 TOTAL_STEPS = 5000
 
-# --- Setup ---
 policy_net = QNetwork(TEXT_DIM, STRUCT_DIM, HIDDEN_DIM, NUM_ACTIONS).to(device)
 target_net = QNetwork(TEXT_DIM, STRUCT_DIM, HIDDEN_DIM, NUM_ACTIONS).to(device)
 target_net.load_state_dict(policy_net.state_dict())
 optimizer = optim.Adam(policy_net.parameters(), lr=1e-3)
 replay_buffer = ReplayBuffer(REPLAY_CAPACITY)
-
-# --- Dataset and Reward Model ---
 synthetic_dataset = [generate_sample() for _ in range(5000)]
 action_vocab = {}
 
 def get_real_transition(sample):
     obs_text, obs_struct, decision_tensor, _ = encode_sample(sample)
-
-    # Simulate next state
     next_sample = generate_sample()
     next_obs_text, next_obs_struct, _, _ = encode_sample(next_sample)
-
-    # Map decision to action index
     decision_key = str(sample["decision_options"])
     if decision_key not in action_vocab:
         action_vocab[decision_key] = len(action_vocab)
@@ -209,8 +195,6 @@ def get_real_transition(sample):
 
     done = False
     return obs_text, obs_struct, action, reward, next_obs_text, next_obs_struct, done
-
-# --- Training Loop ---
 for step in range(TOTAL_STEPS):
     sample = synthetic_dataset[step % len(synthetic_dataset)]
     transition = get_real_transition(sample)
@@ -249,13 +233,7 @@ for step in range(TOTAL_STEPS):
     if step % 100 == 0 and len(replay_buffer) >= BATCH_SIZE:
         print(f"Step {step} — Loss: {loss.item():.4f} — Epsilon: {EPSILON:.3f}") 
         
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import random
-from collections import deque
-import matplotlib.pyplot as plt
-
+### Same Variant --- From here---###
 plt.ion()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -284,7 +262,6 @@ class ReplayBuffer:
     def __len__(self):
         return len(self.buffer)
 
-# --- Simple Q-Network ---
 class QNetwork(nn.Module):
     def __init__(self, text_dim, struct_dim, hidden_dim, num_actions):
         super().__init__()
@@ -298,7 +275,6 @@ class QNetwork(nn.Module):
         x = torch.cat([x_text, x_struct], dim=1)
         return self.fc_combined(x)
 
-# --- Hyperparameters ---
 TEXT_DIM = 384
 STRUCT_DIM = 384
 HIDDEN_DIM = 64
@@ -313,31 +289,23 @@ EPSILON = max(EPSILON_MIN, EPSILON - 1e-4)
 REPLAY_CAPACITY = 10000
 TOTAL_STEPS = 5000
 
-# --- Setup ---
 policy_net = QNetwork(TEXT_DIM, STRUCT_DIM, HIDDEN_DIM, NUM_ACTIONS).to(device)
 target_net = QNetwork(TEXT_DIM, STRUCT_DIM, HIDDEN_DIM, NUM_ACTIONS).to(device)
 target_net.load_state_dict(policy_net.state_dict())
 optimizer = optim.Adam(policy_net.parameters(), lr=1e-3)
 replay_buffer = ReplayBuffer(REPLAY_CAPACITY)
-
-# --- Dataset and Reward Model ---
 synthetic_dataset = [generate_sample() for _ in range(5000)]
 action_vocab = {}
 
 def get_real_transition(sample):
     obs_text, obs_struct, decision_tensor, _ = encode_sample(sample)
-
-    # Simulate next state
     next_sample = generate_sample()
     next_obs_text, next_obs_struct, _, _ = encode_sample(next_sample)
-
-    # Map decision to action index
     decision_key = str(sample["decision_options"])
     if decision_key not in action_vocab:
         action_vocab[decision_key] = len(action_vocab)
     action = action_vocab[decision_key]
 
-    # Predict reward
     with torch.no_grad():
         reward_tensor = reward_model(
             obs_text.unsqueeze(0).to(device),
@@ -349,7 +317,6 @@ def get_real_transition(sample):
     done = False
     return obs_text, obs_struct, action, reward, next_obs_text, next_obs_struct, done
 
-# --- Training Loop ---
 for step in range(TOTAL_STEPS):
     sample = synthetic_dataset[step % len(synthetic_dataset)]
     transition = get_real_transition(sample)
